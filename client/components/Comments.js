@@ -1,25 +1,27 @@
-import React from 'react'
+import React from 'react';
 
 const Comments = React.createClass({
-
-  renderComment(comment,i) {
+  renderComment(comment, i) {
     return (
-      <div className="comment">
+      <div className="comment" key={i}>
         <p>
           <strong>{comment.user}</strong>
           {comment.text}
-          <button className="remove-comment">&times;</button>
+          <button className="remove-comment" onClick={this.props.removeComment.bind(null, this.props.params.photoid, i)}>&times;</button>
         </p>
-      <div>
+      </div>
     )
-  }
-
+  },
   handleSubmit(e) {
-    e.handleDefault()
-  }
-
+    e.preventDefault();
+    const { photoid } = this.props.params;
+    const author = this.refs.author.value;
+    const comment = this.refs.comment.value;
+    this.props.addComment(photoid, author, comment);
+    this.refs.commentForm.reset();
+  },
   render() {
-    return  (
+    return (
       <div className="comments">
         {this.props.postComments.map(this.renderComment)}
         <form ref="commentForm" className="comment-form" onSubmit={this.handleSubmit}>
@@ -30,7 +32,6 @@ const Comments = React.createClass({
       </div>
     )
   }
-})
-
+});
 
 export default Comments;
