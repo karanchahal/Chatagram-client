@@ -6,11 +6,7 @@ const Single = React.createClass({
   render() {
     return (
       <div>
-      <h1>
-        <Link to="/">Karanstagram</Link>
-      </h1>
-      {React.cloneElement(this.props.children, this.props)}
-
+      <h1>this is single</h1>
       </div>
     )
   }

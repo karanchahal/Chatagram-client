@@ -7,7 +7,7 @@ const PhotoGrid = React.createClass({
     return (
       <div>
       <h1>
-        <Link to="/">Karanstagram</Link>
+        this is photogrid
       </h1>
       </div>
     )
