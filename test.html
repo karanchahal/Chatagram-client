@@ -1,0 +1,64 @@
+<html>
+<head>
+
+</head>
+<body>
+  <input type="text" value="nothing"></input>
+</body>
+<script>
+
+function capitalize(s) {
+  return s.replace(first_char, function(m) { return m.toUpperCase(); });
+}
+
+var final_transcript = ''
+var interim_transcript = ''
+if ('webkitSpeechRecognition' in window) {
+  var recognition = new webkitSpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onstart = function() {
+
+  };
+  recognition.onerror = function(event) {
+    if (event.error == 'no-speech') {
+      console.log('No speech')
+    }
+    if (event.error == 'audio-capture') {
+        console.log('No audio capture')
+    }
+    if (event.error == 'not-allowed') {
+        console.log('Not allowed')
+    }
+  };
+  recognition.onend = function() {
+
+    if (!final_transcript) {
+      console.log('No final transcript')
+
+      return;
+    }
+
+
+  };
+  recognition.onresult = function(event) {
+    var interim_transcript = '';
+    var final_transcript = ''
+    for (var i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        final_transcript += event.results[i][0].transcript;
+      } else {
+        interim_transcript += event.results[i][0].transcript;
+      }
+    }
+    console.log(final_transcript)
+  };
+}
+  recognition.lang = 'en-IN'
+  recognition.start();
+
+
+
+}
+</script>
+</html>

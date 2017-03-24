@@ -1,4 +1,3 @@
-<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8">
@@ -8,6 +7,80 @@
   </head>
   <body>
     <div id="root"></div>
+    <center><button id="button-record" onClick=startRecording()>Record</button></center>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.8/socket.io.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
     <script src="/static/bundle.js"></script>
+    <script>
+
+    var event = document.createEvent('Event');
+    // Define that the event name is 'build'.
+    event.initEvent('text2speech', true, true);
+
+    function capitalize(s) {
+      return s.replace(first_char, function(m) { return m.toUpperCase(); });
+    }
+
+    var final_transcript = ''
+    var interim_transcript = ''
+    var recognising = false;
+    if ('webkitSpeechRecognition' in window) {
+      var recognition = new webkitSpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onstart = function() {
+    	recognising = true
+      };
+      recognition.onerror = function(event) {
+        if (event.error == 'no-speech') {
+          console.log('No speech')
+        }
+        if (event.error == 'audio-capture') {
+            console.log('No audio capture')
+        }
+        if (event.error == 'not-allowed') {
+            console.log('Not allowed')
+        }
+      };
+      recognition.onend = function() {
+        if (!final_transcript) {
+          return;
+        }
+      };
+      recognition.onresult = function(event) {
+        var interim_transcript = '';
+        var final_transcript = ''
+        for (var i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            final_transcript += event.results[i][0].transcript;
+          } else {
+            interim_transcript += event.results[i][0].transcript;
+          }
+        }
+
+      var eventz = new CustomEvent('text2speech', { 'detail': interim_transcript });
+      window.dispatchEvent(eventz);
+
+      if(final_transcript != '') {
+        var eventz = new CustomEvent('text2speech', { 'detail': final_transcript });
+        window.dispatchEvent(eventz);
+      }
+      };
+      function startRecording() {
+
+      	if(recognising) {
+          document.getElementById('button-record').innerHTML = 'Record'
+      		recognising = false;
+      		recognition.stop()
+      		return;
+      	}
+          document.getElementById('button-record').innerHTML = 'Stop'
+      	  recognition.lang = 'en-IN'
+      	  recognition.start();
+      }
+
+    }
+    </script>
+
   </body>
 </html>
