@@ -80,9 +80,15 @@ class ChatBubble extends Component {
   }
 
   render() {
+    if(this.props.bot == true){
+      return (
+        <div className="chat-bubble" style={{color:'#125688'}}> <b>{this.props.message} </b></div>
+      )
+    } else {
     return (
-      <h4> {this.props.message}</h4>
+      <div className="chat-bubble"> <b>{this.props.message} </b></div>
     )
+    }
   }
 }
 
@@ -95,8 +101,6 @@ class Main extends Component {
     this.state = {
       'message':'Heyo',
       'chat':[
-        {"message":"Hello"},
-        {"message":"What's up"}
       ],
 
     }
@@ -105,8 +109,8 @@ class Main extends Component {
     this.handleChange = this.handleChange.bind(this)
     this.handleSpeech = this.handleSpeech.bind(this)
 
-    socket.on('message', (payload) => this.updateChat(payload));
-    socket.on('map', (payload) => this.updateChat(payload));
+    socket.on('message', (payload) => this.updateChat(payload,true));
+    socket.on('map', (payload) => this.updateChat(payload,false));
 
   }
 
@@ -118,9 +122,15 @@ class Main extends Component {
     this.setState({message: e.detail})
   }
 
-  updateChat(msg){
+  updateChat(msg,chatBot){
     var chat = this.state.chat
-    chat.push(msg)
+    var final_msg = {'message': msg.message,'bot':chatBot}
+    if(msg.map != undefined) {
+      final_msg.map = 1;
+      final_msg.markers = msg.markers;
+    }
+
+    chat.push(final_msg)
     this.setState({'chat': chat,'message':''})
 
     var objDiv = document.getElementById("chatBox");
@@ -128,7 +138,7 @@ class Main extends Component {
   }
 
   sendMessage() {
-    this.updateChat({"message":this.state.message})
+    this.updateChat({"message":this.state.message},false)
     socket.emit('message',{message:this.state.message})
   }
 
@@ -178,9 +188,9 @@ class Main extends Component {
   renderChats() {
 
     return _.map(this.state.chat,(chat,index) => {
-
+      console.log(chat)
       if(chat.map == undefined) {
-        return <ChatBubble message={chat.message} key={index} />
+        return <ChatBubble message={chat.message} key={index} bot={chat.bot} />
       } else {
         let markers = this.formatMapMarkers(chat.markers)
         return <MapBubble markers={markers} key={index} />
