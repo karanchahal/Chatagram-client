@@ -13,6 +13,7 @@ function capitalize(s) {
   return s.replace(first_char, function(m) { return m.toUpperCase(); });
 }
 
+
 var final_transcript = ''
 var interim_transcript = ''
 var recognising = false;
@@ -104,6 +105,13 @@ class Main extends Component {
   updateChat(msg,chatBot){
     var chat = this.state.chat
     var final_msg = {'message': msg.message,'bot':chatBot}
+
+    if(chatBot == true) {
+      var speakMessage = new SpeechSynthesisUtterance(msg.message);
+      speakMessage.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == 'Google US English'; })[0];
+      speechSynthesis.speak(speakMessage);
+    }
+
     if(msg.map != undefined) {
       final_msg.map = 1;
       final_msg.markers = msg.markers;
@@ -168,7 +176,7 @@ class Main extends Component {
   renderChats() {
 
     return _.map(this.state.chat,(chat,index) => {
-      console.log(chat)
+
       if(chat.map == undefined) {
         return <ChatBubble message={chat.message} key={index} bot={chat.bot} />
       } else {
