@@ -2,6 +2,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router'
 import MapBubble from './MapBubble'
+import ChatBubble from './ChatBubble'
 import _ from 'lodash'
 const io = require('socket.io-client')
 
@@ -16,6 +17,7 @@ var final_transcript = ''
 var interim_transcript = ''
 var recognising = false;
 var recognition = ''
+
 if ('webkitSpeechRecognition' in window) {
   recognition = new webkitSpeechRecognition();
   recognition.continuous = true;
@@ -35,12 +37,9 @@ if ('webkitSpeechRecognition' in window) {
     }
   };
   recognition.onend = function() {
-
     if (!final_transcript) {
       return;
     }
-
-
   };
   recognition.onresult = function(event) {
     var interim_transcript = '';
@@ -54,43 +53,23 @@ if ('webkitSpeechRecognition' in window) {
     }
 
     document.getElementById('textbox').value = interim_transcript
-if(final_transcript != '') {
-document.getElementById('textbox').value = final_transcript
-}
+    if(final_transcript != '') {
+    document.getElementById('textbox').value = final_transcript
+    }
   };
-function startRecording() {
-
-	if(recognising) {
-document.getElementById('button-record').innerHTML = 'Record'
-		recognising = false;
-		recognition.stop()
-		return;
-	}
-document.getElementById('button-record').innerHTML = 'Stop'
+  function startRecording() {
+  	if(recognising) {
+      document.getElementById('button-record').innerHTML = 'Record'
+  		recognising = false;
+  		recognition.stop()
+  		return;
+  	}
+    document.getElementById('button-record').innerHTML = 'Stop'
 	  recognition.lang = 'en-IN'
 	  recognition.start();
+   }
 }
 
-}
-
-
-class ChatBubble extends Component {
-  constructor(props) {
-    super(props)
-  }
-
-  render() {
-    if(this.props.bot == true){
-      return (
-        <div className="chat-bubble" style={{color:'#125688'}}> <b>{this.props.message} </b></div>
-      )
-    } else {
-    return (
-      <div className="chat-bubble"> <b>{this.props.message} </b></div>
-    )
-    }
-  }
-}
 
 
 class Main extends Component {
@@ -185,6 +164,7 @@ class Main extends Component {
 
     return finalmarkers
   }
+
   renderChats() {
 
     return _.map(this.state.chat,(chat,index) => {
