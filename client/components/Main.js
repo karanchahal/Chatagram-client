@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { Link } from 'react-router'
 import MapBubble from './MapBubble'
 import ChatBubble from './ChatBubble'
+import Webcam from 'react-webcam';
 import _ from 'lodash'
 const io = require('socket.io-client')
 
@@ -82,13 +83,17 @@ class Main extends Component {
       'message':'Heyo',
       'chat':[
       ],
-
+      'time_last':'',
+      'dataset':[],
+      'screenshot':null,
+      'verify':false
     }
 
     this.sendMessage = this.sendMessage.bind(this)
     this.handleChange = this.handleChange.bind(this)
     this.handleSpeech = this.handleSpeech.bind(this)
-
+    this.handleKeyPress = this.handleKeyPress.bind(this)
+    this.screenshot = this.screenshot.bind(this)
     socket.on('message', (payload) => this.updateChat(payload,true));
     socket.on('map', (payload) => this.updateChat(payload,false));
 
@@ -104,6 +109,7 @@ class Main extends Component {
 
   updateChat(msg,chatBot){
     var chat = this.state.chat
+
     var final_msg = {'message': msg.message,'bot':chatBot}
 
     if(chatBot == true) {
@@ -126,11 +132,29 @@ class Main extends Component {
 
   sendMessage() {
     this.updateChat({"message":this.state.message},false)
-    socket.emit('message',{message:this.state.message})
+    socket.emit('message',{dataset:this.state.dataset,message:this.state.message})
+    this.setState({'dataset':[]})
   }
 
   handleChange(event) {
     this.setState({'message':event.target.value})
+  }
+
+  handleKeyPress(event) {
+    let time
+    let time_now = Date.now()
+
+    if(this.state.time_last == '') {
+      time = 0
+    } else {
+      time = time_now - this.state.time_last
+    }
+
+    let keyPressed = String.fromCharCode(event.charCode)
+    let dataset = this.state.dataset
+
+    dataset.push({'key':keyPressed,'time':time})
+    this.setState({'dataset':dataset,'time_last':time_now})
   }
 
   render() {
@@ -141,14 +165,18 @@ class Main extends Component {
           <Link to="/">Chatagram</Link>
         </h1>
         <center>
+
           <div id="chatBox" style={{height:200+'px', 'overflow-y': 'scroll'}}>
             {this.renderChats()}
           </div>
-          <input type="text" value={message} onChange={this.handleChange} ></input>
+          <input type="text" value={message} onChange={this.handleChange} onKeyPress={this.handleKeyPress}></input>
           <button onClick={this.sendMessage} >Send</button>
         </center>
+        <br />
+        <Webcam  ref='webcam' height='200' audio='false'/>
+        <button onClick={this.screenshot}>capture</button>
 
-        {this.props.children}
+
 
       </div>
     )
@@ -176,15 +204,19 @@ class Main extends Component {
   renderChats() {
 
     return _.map(this.state.chat,(chat,index) => {
-
       if(chat.map == undefined) {
         return <ChatBubble message={chat.message} key={index} bot={chat.bot} />
       } else {
         let markers = this.formatMapMarkers(chat.markers)
         return <MapBubble markers={markers} key={index} />
       }
-
     })
+  }
+
+  screenshot() {
+
+    var screenshot = this.refs.webcam.getScreenshot();
+    this.setState({'screenshot':screenshot})
   }
 
 };
