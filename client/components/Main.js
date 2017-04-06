@@ -3,11 +3,12 @@ import React, { Component } from 'react';
 import { Link } from 'react-router'
 import MapBubble from './MapBubble'
 import ChatBubble from './ChatBubble'
-import Webcam from 'react-webcam';
+import Webcam from 'react-webcam'
 import _ from 'lodash'
 const io = require('socket.io-client')
 
 const socket = io('http://localhost:3110/');
+const facesocket = io('http://localhost:3111/');
 
 
 function capitalize(s) {
@@ -83,39 +84,113 @@ class Main extends Component {
       'message':'Heyo',
       'chat':[
       ],
-      'time_last':'',
+
+      'time_last': '',
       'dataset':[],
-      'screenshot':null,
-      'verify':false
+      'screenshot': null,
+      'verify': false,
+      'num_of_times': 0
+
     }
 
     this.sendMessage = this.sendMessage.bind(this)
     this.handleChange = this.handleChange.bind(this)
     this.handleSpeech = this.handleSpeech.bind(this)
+
     this.handleKeyPress = this.handleKeyPress.bind(this)
     this.screenshot = this.screenshot.bind(this)
+
+    this.verifyFace = this.verifyFace.bind(this)
+    this.verified = this.verified.bind(this)
+    this.checkVerification = this.checkVerification.bind(this)
+
     socket.on('message', (payload) => this.updateChat(payload,true));
     socket.on('map', (payload) => this.updateChat(payload,false));
+    facesocket.on('faceverify', (payload) => this.checkVerification(payload,false));
 
   }
 
+
   componentDidMount() {
     window.addEventListener('text2speech',this.handleSpeech, false);
+  }
+
+  checkVerification(payload) {
+    if(this.state.verify == true) {
+      if(payload.acc_no != 0 || this.state.num_of_times > 3) {
+
+        if(this.state.num_of_times > 3) {
+          socket.emit('faceverify',{'acc_no':0})
+        } else {
+          socket.emit('faceverify',{'acc_no':payload.acc_no})
+        }
+
+        this.setState({'verify':false,'num_of_times':0})
+
+      } else {
+        var speakMessage = new SpeechSynthesisUtterance('Please try again');
+        speakMessage.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == 'Google US English'; })[0];
+        speechSynthesis.speak(speakMessage);
+        this.setState({'num_of_times':this.state.num_of_times +1})
+      }
+   }
   }
 
   handleSpeech(e) {
     this.setState({message: e.detail})
   }
 
+  verified() {
+
+    this.setState({'verify': !this.state.verify})
+  }
+
+  verifyFace() {
+    //this.setState({'verify': true})
+  if(this.state.verify == true) {
+    return(
+      <div>
+        <center> <Webcam ref ='webcam' height='300' audio={false} /> </center>
+        <button onClick={this.screenshot}>Take Screenshot </button>
+      </div>
+    )
+  } else {
+    return (<div id="chatBox" style={{height:200+'px', 'overflow-y': 'scroll'}}>
+      {this.renderChats()}
+      </div>
+    )
+  }
+
+  }
+
   updateChat(msg,chatBot){
     var chat = this.state.chat
-
     var final_msg = {'message': msg.message,'bot':chatBot}
+    console.log(msg)
+    if(msg.faceverify == 1) {
+      console.log('YOOOOO')
+      this.setState({'verify':true})
+    }
 
     if(chatBot == true) {
+      if(msg.message.length > 100) {
+        console.log('IN it')
+        var msg1 = msg.message.substring(0,100)
+        console.log(msg1)
+        var speakMessage = new SpeechSynthesisUtterance(msg1);
+        speakMessage.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == 'Google US English'; })[0];
+        speechSynthesis.speak(speakMessage);
+
+        var msg2 = msg.message.substring(100,msg.message.length)
+        console.log(msg2)
+        var speakMessage2 = new SpeechSynthesisUtterance(msg2);
+        speakMessage2.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == 'Google US English'; })[0];
+        speechSynthesis.speak(speakMessage2);
+      } else {
       var speakMessage = new SpeechSynthesisUtterance(msg.message);
       speakMessage.voice = speechSynthesis.getVoices().filter(function(voice) { return voice.name == 'Google US English'; })[0];
       speechSynthesis.speak(speakMessage);
+      }
     }
 
     if(msg.map != undefined) {
@@ -132,8 +207,8 @@ class Main extends Component {
 
   sendMessage() {
     this.updateChat({"message":this.state.message},false)
-    socket.emit('message',{dataset:this.state.dataset,message:this.state.message})
-    this.setState({'dataset':[]})
+    socket.emit('message',{dataset:this.state.dataset, message:this.state.message})
+    this.setState({'dataset': []})
   }
 
   handleChange(event) {
@@ -141,21 +216,21 @@ class Main extends Component {
   }
 
   handleKeyPress(event) {
-    let time
-    let time_now = Date.now()
+      let time
+      let time_now = Date.now()
 
-    if(this.state.time_last == '') {
-      time = 0
-    } else {
-      time = time_now - this.state.time_last
+      if(this.state.time_last == '') {
+        time = 0
+      } else {
+        time = time_now - this.state.time_last
+      }
+
+      let keyPressed = String.fromCharCode(event.charCode)
+      let dataset = this.state.dataset
+
+      dataset.push({'key':keyPressed,'time':time})
+      this.setState({'dataset':dataset,'time_last':time_now})
     }
-
-    let keyPressed = String.fromCharCode(event.charCode)
-    let dataset = this.state.dataset
-
-    dataset.push({'key':keyPressed,'time':time})
-    this.setState({'dataset':dataset,'time_last':time_now})
-  }
 
   render() {
     var message = this.state.message
@@ -165,19 +240,12 @@ class Main extends Component {
           <Link to="/">Chatagram</Link>
         </h1>
         <center>
-
-          <div id="chatBox" style={{height:200+'px', 'overflow-y': 'scroll'}}>
-            {this.renderChats()}
-          </div>
+          {this.verifyFace()}
           <input type="text" value={message} onChange={this.handleChange} onKeyPress={this.handleKeyPress}></input>
           <button onClick={this.sendMessage} >Send</button>
         </center>
-        <br />
-        <Webcam  ref='webcam' height='200' audio='false'/>
-        <button onClick={this.screenshot}>capture</button>
 
-
-
+        {this.props.children}
       </div>
     )
   }
@@ -210,13 +278,14 @@ class Main extends Component {
         let markers = this.formatMapMarkers(chat.markers)
         return <MapBubble markers={markers} key={index} />
       }
+
     })
   }
 
   screenshot() {
 
-    var screenshot = this.refs.webcam.getScreenshot();
-    this.setState({'screenshot':screenshot})
+    facesocket.emit('faceverify',{'picture':this.refs.webcam.getScreenshot()})
+
   }
 
 };
