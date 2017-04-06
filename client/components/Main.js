@@ -117,10 +117,10 @@ class Main extends Component {
 
   checkVerification(payload) {
     if(this.state.verify == true) {
-      if(payload.acc_no != 0 || this.state.num_of_times > 3) {
+      if(payload.acc_no != '0000' || this.state.num_of_times > 2) {
 
-        if(this.state.num_of_times > 3) {
-          socket.emit('faceverify',{'acc_no':0})
+        if(this.state.num_of_times > 2) {
+          socket.emit('faceverify',{'acc_no':'0000'})
         } else {
           socket.emit('faceverify',{'acc_no':payload.acc_no})
         }
